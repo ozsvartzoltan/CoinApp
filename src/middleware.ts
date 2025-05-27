@@ -5,11 +5,9 @@ import { createServerClient } from "@supabase/ssr"
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
-  console.log(res)
-
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
     {
       cookies: {
         get: (key) => req.cookies.get(key)?.value,
@@ -32,9 +30,14 @@ export async function middleware(req: NextRequest) {
     pathname: req.nextUrl.pathname,
     user,
   })
+  console.log(user)
 
-  const publicRoutes = ["/login", "/register"]
-  const isPublic = publicRoutes.includes(pathname)
+  const publicRoutes = ["/login", "/register", "/404"]
+  const normalizedPath =
+    pathname.endsWith("/") && pathname !== "/"
+      ? pathname.slice(0, -1)
+      : pathname
+  const isPublic = publicRoutes.includes(normalizedPath)
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", req.url))

@@ -1,41 +1,18 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { createClient } from "@/supabase/supabaseClient"
+import { AuthContext } from "@/contexts/authContext"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useContext, useState } from "react"
 
 export default function RegisterPage() {
+  const auth = useContext(AuthContext)
+  if (!auth) throw new Error("No context found for AuthContext")
+  const { handleRegister } = auth
   const router = useRouter()
-  const supabase = createClient()
   const [email, setEmail] = useState<string>("")
   const [password, setPassword] = useState<string>("")
   const [name, setName] = useState<string>("")
-
-  const handleRegister = async () => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    console.log(data, error)
-
-    if (error) {
-      alert(error.message)
-      return
-    }
-
-    const user = data.user
-    if (user) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ name })
-        .eq("id", user.id)
-
-      if (profileError) {
-        alert("Failed to save name: " + profileError.message)
-        return
-      }
-    }
-
-    router.push("/")
-  }
 
   return (
     <main className="p-4">
@@ -61,7 +38,12 @@ export default function RegisterPage() {
             value={password}
           />
         </div>
-        <Button className="max-w-32" onClick={handleRegister}>
+        <Button
+          className="max-w-32"
+          onClick={() => {
+            handleRegister(email, password, name)
+          }}
+        >
           Register
         </Button>
         <Button className="max-w-32" onClick={() => router.push("/login")}>

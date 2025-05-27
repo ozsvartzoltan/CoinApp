@@ -12,12 +12,5 @@ export default function ProtectedLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return (
-    <html lang="en">
-      <body>
-        <Navbar />
-        <main className="p-6">{children}</main>
-      </body>
-    </html>
-  )
+  return <div className="p-6">{children}</div>
 }
