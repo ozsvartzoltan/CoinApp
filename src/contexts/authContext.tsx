@@ -48,6 +48,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (error) {
       alert(error.message)
+      console.log("kk", error)
+
       return
     }
 
@@ -59,10 +61,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq("id", user.id)
 
       if (profileError) {
+        console.log("profileerror", profileError)
+
         alert("Failed to save name: " + profileError.message)
         return
       }
     }
+    console.log("ok")
 
     router.push("/")
   }
