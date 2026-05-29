@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       if (data.user) {
         setUser(data.user)
-        router.push("/home")
+        router.push("/search")
       }
       return { error: null }
     } catch (error) {
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Set user state and redirect to home
         setUser(user)
-        router.push("/home")
+        router.push("/search")
       }
 
       return { error: null }

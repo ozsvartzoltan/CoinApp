@@ -27,7 +27,7 @@ export async function middleware(req: NextRequest) {
 
   const pathname = req.nextUrl.pathname
 
-  const publicRoutes = ["/login", "/register", "/404"]
+  const publicRoutes = ["/", "/home", "/search", "/login", "/register", "/404"]
   const normalizedPath =
     pathname.endsWith("/") && pathname !== "/"
       ? pathname.slice(0, -1)
