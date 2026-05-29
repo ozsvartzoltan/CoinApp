@@ -9,6 +9,16 @@ import type {
   CoinSearchParams,
 } from "@/lib/coins"
 
+type UserCoinRow = {
+  id: string
+  quantity: number
+  estimated_value?: number | null
+  currency: string
+  notes?: string | null
+  custom_desc?: Partial<Coin> | null
+  coins: Coin
+}
+
 const supabase = createClient()
 
 // Generate unique ID for manual coins
@@ -253,12 +263,14 @@ export async function getUserCollection(
     }
 
     // Transform data to merge coin + custom_desc
-    const displayData: UserCoinDisplay[] = (data || []).map((item: any) => ({
+    const rows = (data || []) as UserCoinRow[]
+
+    const displayData: UserCoinDisplay[] = rows.map((item) => ({
       userCoinId: item.id,
       quantity: item.quantity,
-      estimated_value: item.estimated_value,
+      estimated_value: item.estimated_value ?? undefined,
       currency: item.currency,
-      notes: item.notes,
+      notes: item.notes ?? undefined,
       coin: {
         ...item.coins,
         ...item.custom_desc, // Custom fields override original

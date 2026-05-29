@@ -14,12 +14,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <AuthProvider>
-        <body>
+      <body>
+        <AuthProvider>
           <Navbar />
           <main className="p-6">{children}</main>
-        </body>
-      </AuthProvider>
+        </AuthProvider>
+      </body>
     </html>
   )
 }

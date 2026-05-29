@@ -2,7 +2,7 @@
 
 import { useContext, useEffect, useState } from "react"
 import { AuthContext } from "@/contexts/authContext"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -10,6 +10,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { createClient } from "@/supabase/supabaseClient"
 import { Eye, Plus, X, Loader } from "lucide-react"
 import type { Coin } from "@/lib/coins"
+
+type CoinDetail = Coin & {
+  time_interval?: {
+    from?: string | number
+    to?: string | number
+  }
+  image?: string
+}
 
 interface OcreCoin {
   id: string
@@ -24,12 +32,12 @@ interface OcreCoin {
   jsonldUrl?: string
   authority?: string
   mint?: string
+  issuer?: string
   manufacture?: string
   obverseLegend?: string
   obverseDescription?: string
   reverseLegend?: string
   reverseDescription?: string
-  [key: string]: any
 }
 
 interface SearchResult {
@@ -61,7 +69,6 @@ export default function SearchPage() {
   const { user } = context
 
   const [searchQuery, setSearchQuery] = useState("")
-  const [results, setResults] = useState<SearchResult[]>([])
   const [supabaseCoins, setSupabaseCoins] = useState<Coin[]>([])
   const [ocreCoins, setOcreCoins] = useState<OcreCoin[]>([])
   const [userCollectionIds, setUserCollectionIds] = useState<Set<string>>(new Set())
@@ -114,7 +121,6 @@ export default function SearchPage() {
   // Search function
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
-      setResults([])
       setSupabaseCoins([])
       setOcreCoins([])
       setSupabaseLoading(false)
@@ -198,11 +204,6 @@ export default function SearchPage() {
       }
 
       // Combine results
-      const combined: SearchResult[] = [
-        ...(supabaseCoins || []).map(coin => ({ type: "supabase" as const, coin })),
-        ...(ocreCoins || []).map(coin => ({ type: "ocre" as const, coin }))
-      ]
-      setResults(combined)
     } catch (err) {
       console.error("Search error:", err)
       setMessage({ type: "error", text: "Search failed" })
@@ -215,7 +216,7 @@ export default function SearchPage() {
     if (!user) return
 
     try {
-      let coinId = coin.id
+      const coinId = coin.id
       
       // Check if this is an OCRE coin (not yet in database)
       const isOcreCoin = 'jsonldUrl' in coin
@@ -361,7 +362,7 @@ export default function SearchPage() {
       const coinStatus = isAdmin ? "approved" : "pending"
 
       // Insert the coin into the database
-      const { error: insertError, data: insertData } = await supabase
+        const { error: insertError } = await supabase
         .from("coins")
         .insert({
           id: coinId,
@@ -500,7 +501,6 @@ export default function SearchPage() {
                 variant="outline" 
                 onClick={() => {
                   setSearchQuery("")
-                  setResults([])
                   setSupabaseCoins([])
                   setOcreCoins([])
                 }}
@@ -913,7 +913,7 @@ async function fetchOcreCoinDetails(jsonldUrl: string): Promise<OcreCoin> {
     }
     
     // Extract basic values
-    const extractLabel = (value: any): string => {
+    const extractLabel = (value: unknown): string => {
       if (!value) return ""
       if (typeof value === "string") return value
       if (Array.isArray(value) && value.length > 0) {
@@ -921,13 +921,15 @@ async function fetchOcreCoinDetails(jsonldUrl: string): Promise<OcreCoin> {
         if (!first) return ""
         if (typeof first === "string") return first
         if (typeof first === "object") {
-          if (first["@value"]) return first["@value"]
-          if (first["@id"]) return extractIdLabel(first["@id"])
+          const firstRecord = first as Record<string, unknown>
+          if (typeof firstRecord["@value"] === "string") return firstRecord["@value"]
+          if (typeof firstRecord["@id"] === "string") return extractIdLabel(firstRecord["@id"])
         }
       }
       if (typeof value === "object") {
-        if (value["@value"]) return value["@value"]
-        if (value["@id"]) return extractIdLabel(value["@id"])
+        const record = value as Record<string, unknown>
+        if (typeof record["@value"] === "string") return record["@value"]
+        if (typeof record["@id"] === "string") return extractIdLabel(record["@id"])
       }
       return ""
     }
@@ -1112,7 +1114,7 @@ function CoinDetailDialog({
   onRemove: () => void
 }) {
   const isSupabase = type === "supabase"
-  const coinData = coin as Coin
+  const coinData = coin as CoinDetail
   const ocreCoinData = coin as OcreCoin
 
   return (
@@ -1149,17 +1151,17 @@ function CoinDetailDialog({
                 <div className="pt-4 border-t">
                   <p className="font-semibold text-sm mb-2">Time Period</p>
                   <div className="text-sm">
-                    {(coinData.time_interval as any).from && <div>From: {(coinData.time_interval as any).from}</div>}
-                    {(coinData.time_interval as any).to && <div>To: {(coinData.time_interval as any).to}</div>}
+                    {coinData.time_interval.from && <div>From: {coinData.time_interval.from}</div>}
+                    {coinData.time_interval.to && <div>To: {coinData.time_interval.to}</div>}
                   </div>
                 </div>
               )}
 
               {/* Image */}
-              {(coinData as any).image && (
+              {coinData.image && (
                 <div className="pt-4 border-t">
                   <p className="font-semibold text-sm mb-2">Image</p>
-                  <img src={(coinData as any).image} alt="Coin" className="max-h-40 rounded" />
+                  <img src={coinData.image} alt="Coin" className="max-h-40 rounded" />
                 </div>
               )}
             </>

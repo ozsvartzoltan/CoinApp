@@ -43,7 +43,7 @@ export interface Coin {
   time_interval?: TimeInterval
   front?: CoinSide
   back?: CoinSide
-  other?: Record<string, any>
+  other?: Record<string, unknown>
   
   // Source tracking
   source_id?: string
@@ -112,7 +112,7 @@ export interface CreateCoinInput {
   time_interval?: TimeInterval
   front?: CoinSide
   back?: CoinSide
-  other?: Record<string, any>
+  other?: Record<string, unknown>
   source_id?: string // For OCRE: "ocre_12345", for manual: auto-generate
 }
 

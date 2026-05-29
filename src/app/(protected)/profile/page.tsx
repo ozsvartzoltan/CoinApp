@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createClient } from "@/supabase/supabaseClient"
 import Link from "next/link"
 import { AlertCircle, Check } from "lucide-react"
@@ -15,6 +16,29 @@ interface ProfileData {
   display_name: string
   email: string
   is_admin: boolean
+}
+
+type CollectionRow = {
+  quantity: number
+  estimated_value?: number | null
+  currency: string
+}
+
+type FrankfurterRate = {
+  date: string
+  base: string
+  quote: string
+  rate: number
+}
+
+const displayCurrencies = ["USD", "EUR", "GBP", "HUF"] as const
+
+function formatCurrency(value: number, currency: string) {
+  return new Intl.NumberFormat("en", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value)
 }
 
 export default function ProfilePage() {
@@ -27,6 +51,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [totalCoins, setTotalCoins] = useState(0)
+  const [collectionValue, setCollectionValue] = useState<number | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState<string | null>(null)
+  const [selectedCurrency, setSelectedCurrency] = useState<(typeof displayCurrencies)[number]>("USD")
 
   const supabase = createClient()
 
@@ -62,6 +91,80 @@ export default function ProfilePage() {
     loadProfile()
   }, [user, supabase])
 
+  useEffect(() => {
+    const loadCollectionStats = async () => {
+      if (!user) {
+        setStatsLoading(false)
+        return
+      }
+
+      setStatsLoading(true)
+      setStatsError(null)
+
+      try {
+        const [{ data, error }, ratesResponse] = await Promise.all([
+          supabase
+            .from("user_coins")
+            .select("quantity, estimated_value, currency")
+            .eq("user_id", user.id),
+          fetch(`https://api.frankfurter.dev/v2/rates?base=${selectedCurrency}`),
+        ])
+
+        if (error) {
+          setStatsError("Failed to load collection stats")
+          return
+        }
+
+        if (!ratesResponse.ok) {
+          setStatsError("Failed to load currency rates")
+          return
+        }
+
+        const rows = (data || []) as CollectionRow[]
+        const totalQuantity = rows.reduce((sum, row) => sum + (row.quantity || 0), 0)
+        const rates = (await ratesResponse.json()) as FrankfurterRate[]
+        const rateMap = new Map<string, number>()
+
+        for (const rate of rates) {
+          if (rate.base.toUpperCase() === selectedCurrency) {
+            rateMap.set(rate.quote.toUpperCase(), rate.rate)
+          }
+        }
+
+        let valueSum = 0
+
+        for (const row of rows) {
+          if (row.estimated_value === null || row.estimated_value === undefined) {
+            continue
+          }
+
+          const rowCurrency = row.currency.toUpperCase()
+          if (rowCurrency === selectedCurrency) {
+            valueSum += row.estimated_value
+            continue
+          }
+
+          const rate = rateMap.get(rowCurrency)
+          if (!rate || !Number.isFinite(rate)) {
+            continue
+          }
+
+          valueSum += row.estimated_value / rate
+        }
+
+        setTotalCoins(totalQuantity)
+        setCollectionValue(valueSum)
+      } catch (err) {
+        console.error("Error loading collection stats:", err)
+        setStatsError("An unexpected error occurred")
+      } finally {
+        setStatsLoading(false)
+      }
+    }
+
+    loadCollectionStats()
+  }, [user, supabase, selectedCurrency])
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !displayName.trim()) {
@@ -96,7 +199,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-500">Loading profile...</div>
+        <div className="text-muted-foreground">Loading profile...</div>
       </div>
     )
   }
@@ -189,19 +292,55 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle>Collection Stats</CardTitle>
+          <CardDescription>Track your total coins and collection value in your preferred currency.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Total Coins</p>
-              <p className="text-2xl font-bold">-</p>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border bg-muted/40 p-4">
+              <p className="text-sm text-muted-foreground">Total Coins</p>
+              <p className="mt-2 text-3xl font-bold">
+                {statsLoading ? "..." : totalCoins.toLocaleString()}
+              </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Collection Value</p>
-              <p className="text-2xl font-bold">-</p>
+            <div className="rounded-lg border bg-muted/40 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">Collection Value</p>
+                <div className="w-24">
+                  <Select
+                    value={selectedCurrency}
+                    onValueChange={(value) => setSelectedCurrency(value as (typeof displayCurrencies)[number])}
+                  >
+                    <SelectTrigger className="h-8 rounded-md">
+                      <SelectValue placeholder="Currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {displayCurrencies.map((currency) => (
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <p className="mt-2 text-3xl font-bold">
+                {statsLoading
+                  ? "..."
+                  : collectionValue !== null
+                    ? formatCurrency(collectionValue, selectedCurrency)
+                    : "—"}
+              </p>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4">Stats coming soon</p>
+          {statsError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{statsError}</AlertDescription>
+            </Alert>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Values are converted using live Frankfurter exchange rates.
+          </p>
         </CardContent>
       </Card>
     </div>
