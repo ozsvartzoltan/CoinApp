@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { createClient } from "@/supabase/supabaseClient"
 import { Eye, Plus, X, Loader } from "lucide-react"
+import Image from "next/image"
 import type { Coin } from "@/lib/coins"
 
 type CoinDetail = Coin & {
@@ -1161,7 +1162,15 @@ function CoinDetailDialog({
               {coinData.image && (
                 <div className="pt-4 border-t">
                   <p className="font-semibold text-sm mb-2">Image</p>
-                  <img src={coinData.image} alt="Coin" className="max-h-40 rounded" />
+                  <div className="relative h-40 w-full max-w-sm overflow-hidden rounded-md bg-muted">
+                    <Image
+                      src={coinData.image}
+                      alt="Coin"
+                      fill
+                      unoptimized
+                      className="object-contain"
+                    />
+                  </div>
                 </div>
               )}
             </>
