@@ -605,7 +605,7 @@ export default function SearchPage() {
                     onView={() => {
                       // Fetch full details for OCRE coin
                       if ((coin as OcreCoin).jsonldUrl) {
-                        fetchOcreCoinDetails((coin as OcreCoin).jsonldUrl!).then(details => {
+                        fetchOcreCoinDetails(normalizeOcreUrl((coin as OcreCoin).jsonldUrl!)).then(details => {
                           setSelectedCoin({ type: "ocre", coin: details })
                           setDetailDialogOpen(true)
                         }).catch(err => {
@@ -841,7 +841,7 @@ function parseOcreAtomFeed(xmlText: string): OcreCoin[] {
         const link = links[j]
         const type = link.getAttribute("type")
         if (type === "application/ld+json") {
-          jsonldUrl = link.getAttribute("href") || ""
+          jsonldUrl = normalizeOcreUrl(link.getAttribute("href") || "")
           break
         }
       }
@@ -888,7 +888,8 @@ function parseOcreAtomFeed(xmlText: string): OcreCoin[] {
 // Helper function to fetch and parse JSON-LD for OCRE coins
 async function fetchOcreCoinDetails(jsonldUrl: string): Promise<OcreCoin> {
   try {
-    const response = await fetch(jsonldUrl)
+    const normalizedUrl = normalizeOcreUrl(jsonldUrl)
+    const response = await fetch(normalizedUrl)
     if (!response.ok) throw new Error("Failed to fetch")
     
     const jsonld = await response.json()
@@ -998,7 +999,7 @@ async function fetchOcreCoinDetails(jsonldUrl: string): Promise<OcreCoin> {
     }
     
     const result: OcreCoin = {
-      id: coinObject["@id"] || jsonldUrl.split("/").pop()?.replace(".jsonld", "") || "",
+      id: coinObject["@id"] || normalizedUrl.split("/").pop()?.replace(".jsonld", "") || "",
       title: title,
       origin: region !== "Uncertain Value" ? region : "",
       denomination: denomination !== "Uncertain Value" ? denomination : "",
@@ -1007,7 +1008,7 @@ async function fetchOcreCoinDetails(jsonldUrl: string): Promise<OcreCoin> {
       width: "",
       timeFrom: formattedStartDate,
       timeTo: formattedEndDate,
-      jsonldUrl: jsonldUrl,
+      jsonldUrl: normalizedUrl,
       authority: authority !== "Uncertain Value" ? authority : "",
       mint: mint !== "Uncertain Value" ? mint : "",
       manufacture: manufacture,
@@ -1021,10 +1022,24 @@ async function fetchOcreCoinDetails(jsonldUrl: string): Promise<OcreCoin> {
   } catch (err) {
     console.error("Error fetching OCRE coin details:", err)
     return {
-      id: jsonldUrl.split("/").pop()?.replace(".jsonld", "") || "",
+      id: normalizeOcreUrl(jsonldUrl).split("/").pop()?.replace(".jsonld", "") || "",
       title: "Could not load details",
-      jsonldUrl: jsonldUrl,
+      jsonldUrl: normalizeOcreUrl(jsonldUrl),
     }
+  }
+}
+
+function normalizeOcreUrl(url: string): string {
+  if (!url) return url
+
+  try {
+    const parsedUrl = new URL(url)
+    if (parsedUrl.hostname === "numismatics.org" && parsedUrl.protocol === "http:") {
+      parsedUrl.protocol = "https:"
+    }
+    return parsedUrl.toString()
+  } catch {
+    return url.replace(/^http:\/\/numismatics\.org\//, "https://numismatics.org/")
   }
 }
 
