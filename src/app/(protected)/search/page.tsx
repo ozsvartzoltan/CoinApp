@@ -475,12 +475,14 @@ export default function SearchPage() {
             Search our catalog and historical records
           </p>
         </div>
-        <div>
-          <Button onClick={() => setAddCoinDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Coin Manually
-          </Button>
-        </div>
+        {user && (
+          <div>
+            <Button onClick={() => setAddCoinDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Coin Manually
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Search Input */}
@@ -657,14 +659,15 @@ export default function SearchPage() {
       )}
 
       {/* Add Coin Manually Dialog */}
-      <Dialog open={addCoinDialogOpen} onOpenChange={setAddCoinDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Coin Manually</DialogTitle>
-          </DialogHeader>
+      {user && (
+        <Dialog open={addCoinDialogOpen} onOpenChange={setAddCoinDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Coin Manually</DialogTitle>
+            </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Denomination</label>
                 <Input
@@ -782,22 +785,23 @@ export default function SearchPage() {
                   className="mt-1"
                 />
               </div>
-            </div>
+              </div>
 
-            <div className="flex gap-2 pt-4 border-t">
-              <Button
-                className="flex-1"
-                onClick={handleAddCoinManually}
-              >
-                Add Coin
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={() => setAddCoinDialogOpen(false)}>
-                Cancel
-              </Button>
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  className="flex-1"
+                  onClick={handleAddCoinManually}
+                >
+                  Add Coin
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setAddCoinDialogOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

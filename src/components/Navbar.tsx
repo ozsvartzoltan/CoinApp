@@ -7,7 +7,7 @@ import { useContext } from "react"
 import { AuthContext } from "@/contexts/authContext"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutGrid, Moon, Search, Sun, UserRound } from "lucide-react"
+import { LayoutGrid, LogIn, Moon, Search, Sun, UserPlus, UserRound } from "lucide-react"
 
 const navItems = [
   {
@@ -81,6 +81,16 @@ export default function Navbar() {
           </nav>
         )}
 
+        {!user && (
+          <nav className="hidden flex-1 justify-center md:flex">
+            <div className="flex items-center gap-1 rounded-full border border-border/70 bg-muted/50 p-1 shadow-sm">
+              <span className="px-4 py-2 text-sm font-medium text-muted-foreground">
+                Browse the catalog, then sign in to save coins
+              </span>
+            </div>
+          </nav>
+        )}
+
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           {user && (
             <div className="hidden max-w-48 flex-col text-right lg:flex">
@@ -88,6 +98,23 @@ export default function Navbar() {
                 {user.email}
               </span>
               <span className="text-xs text-muted-foreground">Signed in</span>
+            </div>
+          )}
+
+          {!user && (
+            <div className="flex items-center gap-2">
+              <Button asChild variant="outline" className="rounded-full">
+                <Link href="/login">
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Link>
+              </Button>
+              <Button asChild className="rounded-full">
+                <Link href="/register">
+                  <UserPlus className="h-4 w-4" />
+                  Register
+                </Link>
+              </Button>
             </div>
           )}
 
