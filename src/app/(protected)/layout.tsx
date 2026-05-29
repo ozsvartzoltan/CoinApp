@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import "../globals.css"
+import { AuthProvider } from "@/contexts/authContext"
 
 export const metadata: Metadata = {
   title: "Coin App",
@@ -11,5 +12,9 @@ export default function ProtectedLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return <div className="p-6">{children}</div>
+  return (
+    <AuthProvider>
+      <div className="p-6">{children}</div>
+    </AuthProvider>
+  )
 }

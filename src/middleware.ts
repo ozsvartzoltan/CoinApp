@@ -6,8 +6,8 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
   const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get: (key) => req.cookies.get(key)?.value,
@@ -26,11 +26,6 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = req.nextUrl.pathname
-  console.log("Middleware hit:", {
-    pathname: req.nextUrl.pathname,
-    user,
-  })
-  console.log(user)
 
   const publicRoutes = ["/login", "/register", "/404"]
   const normalizedPath =
